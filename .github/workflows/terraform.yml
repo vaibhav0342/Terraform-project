@@ -3,7 +3,7 @@ name: Terraform Multi-Env Pipeline
 on:
   pull_request:
   push:
-    branches: ["main"]
+    branches: ["dev", "staging", "release"]
 
 permissions:
   id-token: write
@@ -43,7 +43,7 @@ jobs:
       - run: terraform plan -out=tfplan
 
       - name: Apply Dev
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/dev'
         run: terraform apply -auto-approve tfplan
 
   # =========================
@@ -67,7 +67,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::YOUR_ACCOUNT_ID:role/staging-role
+          role-to-assume: ${{ env.ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
       - run: terraform init
@@ -75,7 +75,7 @@ jobs:
       - run: terraform plan -out=tfplan
 
       - name: Apply Staging
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/staging'
         run: terraform apply -auto-approve tfplan
 
   # =========================
@@ -107,5 +107,5 @@ jobs:
       - run: terraform plan -out=tfplan
 
       - name: Apply Production
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         run: terraform apply -auto-approve tfplan
