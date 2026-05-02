@@ -10,11 +10,10 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: us-east-1
-  ROLE_ARN: arn:aws:iam::170635865327:role/multi-env-role
+  AWS_REGION: ${{ secrets.AWS_REGION }}
 
 #######################################
-# 🔍 PR VALIDATION (SAFE - NO AWS CREDS)
+# 🔍 PR VALIDATION (NO AWS ACCESS)
 #######################################
 jobs:
   pr-check:
@@ -22,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Terraform
@@ -31,19 +30,19 @@ jobs:
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
-      - name: Terraform Init
+      - name: Terraform Init (no backend)
         run: terraform init -backend=false
 
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Plan (No backend)
+      - name: Terraform Plan (dry run)
         run: terraform plan -lock=false
 
       - name: Run TFLint
         uses: terraform-linters/tflint-action@v4
 
-      - name: Run tfsec (Security Scan)
+      - name: Run tfsec Security Scan
         uses: aquasecurity/tfsec-action@v1.0.3
 
 
@@ -67,8 +66,9 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.DEV_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: dev-${{ github.run_id }}
 
       - name: Terraform Init
         run: terraform init
@@ -90,7 +90,7 @@ jobs:
 
 
 #######################################
-# 🟡 STAGING DEPLOY (MANUAL APPROVAL)
+# 🟡 STAGING DEPLOY (APPROVAL REQUIRED)
 #######################################
   staging:
     if: github.ref == 'refs/heads/staging'
@@ -100,7 +100,7 @@ jobs:
       run:
         working-directory: environments/staging
 
-    environment: staging  # 🔒 configure approval in GitHub UI
+    environment: staging
 
     steps:
       - uses: actions/checkout@v4
@@ -109,8 +109,9 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.STAGING_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: staging-${{ github.run_id }}
 
       - name: Terraform Init
         run: terraform init
@@ -142,7 +143,7 @@ jobs:
       run:
         working-directory: environments/prod
 
-    environment: production  # 🔒 MUST require reviewers
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -151,8 +152,9 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.PROD_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: prod-${{ github.run_id }}
 
       - name: Terraform Init
         run: terraform init
