@@ -11,15 +11,13 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
+  ROLE_ARN: arn:aws:iam::170635865327:role/multi-env-role
 
 jobs:
 
-  # =========================
-  # DEV STAGE
-  # =========================
   dev:
-    name: Deploy Dev
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
 
     defaults:
       run:
@@ -29,83 +27,66 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: hashicorp/setup-terraform@v3
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::YOUR_ACCOUNT_ID:role/dev-role
+          role-to-assume: ${{ env.ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - run: terraform init
-      - run: terraform fmt -check
       - run: terraform validate
       - run: terraform plan -out=tfplan
+      - run: terraform apply -auto-approve tfplan
 
-      - name: Apply Dev
-        if: github.ref == 'refs/heads/dev'
-        run: terraform apply -auto-approve tfplan
 
-  # =========================
-  # STAGING STAGE
-  # =========================
   staging:
-    name: Deploy Staging
     runs-on: ubuntu-latest
-    needs: dev   # only runs after dev success
+    needs: dev
+    if: github.ref == 'refs/heads/staging'
 
     defaults:
       run:
         working-directory: environments/staging
 
-    environment: staging   # requires approval
+    environment: staging
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: hashicorp/setup-terraform@v3
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.ROLE }}
+          role-to-assume: ${{ env.ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - run: terraform init
       - run: terraform validate
       - run: terraform plan -out=tfplan
+      - run: terraform apply -auto-approve tfplan
 
-      - name: Apply Staging
-        if: github.ref == 'refs/heads/staging'
-        run: terraform apply -auto-approve tfplan
 
-  # =========================
-  # PROD STAGE
-  # =========================
   prod:
-    name: Deploy Production
     runs-on: ubuntu-latest
     needs: staging
+    if: github.ref == 'refs/heads/release'
 
     defaults:
       run:
         working-directory: environments/prod
 
-    environment: production   # strict approval
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: hashicorp/setup-terraform@v3
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::YOUR_ACCOUNT_ID:role/prod-role
+          role-to-assume: ${{ env.ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - run: terraform init
       - run: terraform validate
       - run: terraform plan -out=tfplan
-
-      - name: Apply Production
-        if: github.ref == 'refs/heads/prod'
-        run: terraform apply -auto-approve tfplan
+      - run: terraform apply -auto-approve tfplan
