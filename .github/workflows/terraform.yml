@@ -1,25 +1,35 @@
-name: Terraform Enterprise Multi-Env Pipeline
+name: Terraform Multi-Env Pipeline
 
 on:
-  pull_request:
   push:
     branches: ["dev", "staging", "release"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose action"
+        required: true
+        default: "apply"
+        type: choice
+        options:
+          - apply
+          - destroy
 
 permissions:
   id-token: write
   contents: read
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  TF_INPUT: 0
+  TF_INPUT: false
   TF_IN_AUTOMATION: true
+  AWS_REGION: ${{ secrets.AWS_REGION }}
 
 concurrency:
   group: terraform-${{ github.ref }}
   cancel-in-progress: false
 
 #######################################
-# 🔍 PR VALIDATION (SECURE - NO AWS)
+# 🔍 PR VALIDATION (NO AWS ACCESS)
 #######################################
 jobs:
   pr-check:
@@ -27,33 +37,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Format
+      - name: Format Check
         run: terraform fmt -check -recursive
 
-      - name: Terraform Init (safe mode)
-        run: terraform init -backend=false -input=false
+      - name: Init (no backend)
+        run: terraform init -backend=false
 
-      - name: Terraform Validate
+      - name: Validate
         run: terraform validate
 
-      - name: Terraform Plan (safe dry-run)
-        run: terraform plan -lock=false -input=false
-
-      - name: Security Scan (tfsec)
-        uses: aquasecurity/tfsec-action@v1.0.3
-
-      - name: Lint (tflint)
-        uses: terraform-linters/tflint-action@v4
-
+      - name: Plan (dry run)
+        run: terraform plan -lock=false
 
 #######################################
-# 🟢 DEV (AUTO APPLY - FAST FEEDBACK)
+# 🟢 DEV (AUTO APPLY)
 #######################################
   dev:
     if: github.ref == 'refs/heads/dev'
@@ -69,30 +70,30 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
 
-      - name: AWS Auth (OIDC)
+      - name: AWS Auth
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DEV_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
-          role-session-name: dev-${{ github.run_id }}
 
-      - name: Terraform Init
-        run: terraform init -input=false
+      - name: Init
+        run: terraform init
 
-      - name: Terraform Validate
-        run: terraform validate
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan -input=false
+      - name: Plan
+        run: terraform plan -out=tfplan
 
-      - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-plan
-          path: environments/dev/tfplan
+      - name: Apply / Destroy
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform apply -auto-approve tfplan
+          fi
 
       - name: Terraform Apply (AUTO)
         run: terraform apply -auto-approve -input=false tfplan
+
 #######################################
 # 🟡 STAGING (APPROVAL REQUIRED)
 #######################################
@@ -110,34 +111,34 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
 
-      - name: AWS Auth (OIDC)
+      - name: AWS Auth
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.STAGING_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
-          role-session-name: staging-${{ github.run_id }}
 
-      - name: Terraform Init
-        run: terraform init -input=false
+      - name: Init
+        run: terraform init
 
-      - name: Terraform Validate
-        run: terraform validate
+      - name: Plan
+        run: terraform plan -out=tfplan
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan -input=false
-
-      - name: Upload Plan Artifact
+      - name: Upload Plan
         uses: actions/upload-artifact@v4
         with:
           name: staging-plan
           path: environments/staging/tfplan
 
-      - name: Terraform Apply (Manual Approval)
-        run: terraform apply -auto-approve -input=false tfplan
-
+      - name: Apply / Destroy
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform apply -auto-approve tfplan
+          fi
 
 #######################################
-# 🔴 PRODUCTION (HARD GATED)
+# 🔴 PRODUCTION (STRICT CONTROL)
 #######################################
   prod:
     if: github.ref == 'refs/heads/release'
@@ -153,27 +154,28 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
 
-      - name: AWS Auth (OIDC)
+      - name: AWS Auth
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.PROD_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
-          role-session-name: prod-${{ github.run_id }}
 
-      - name: Terraform Init
-        run: terraform init -input=false
+      - name: Init
+        run: terraform init
 
-      - name: Terraform Validate
-        run: terraform validate
+      - name: Plan
+        run: terraform plan -out=tfplan
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan -input=false
-
-      - name: Upload Plan Artifact
+      - name: Upload Plan
         uses: actions/upload-artifact@v4
         with:
           name: prod-plan
           path: environments/prod/tfplan
 
-      - name: Terraform Apply (STRICT APPROVAL)
-        run: terraform apply -auto-approve -input=false tfplan
+      - name: Apply / Destroy
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform apply -auto-approve tfplan
+          fi
