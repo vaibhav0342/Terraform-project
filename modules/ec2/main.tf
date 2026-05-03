@@ -6,7 +6,6 @@ resource "aws_instance" "web" {
   associate_public_ip_address = true
   monitoring                  = true
 
-
   tags = merge(
     {
       Name = "jenkins-server"
