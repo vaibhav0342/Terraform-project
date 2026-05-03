@@ -1,2 +1,2 @@
-ami                = "ami-0f5ee92e2d63afc18"   # Amazon Linux 2 (ap-south-1)
+ami                = "ami-0ed094fb1304fd857"   # Amazon Linux 2 
 instance_type      = "t3.micro"
