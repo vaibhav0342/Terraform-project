@@ -81,7 +81,10 @@ jobs:
 
       - name: Plan
         run: terraform plan -out=tfplan
-
+      
+      - name: Show Plan
+        run: terraform show tfplan
+ 
       - name: Apply / Destroy
         run: |
           if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
@@ -118,6 +121,9 @@ jobs:
 
       - name: Plan
         run: terraform plan -out=tfplan
+
+      - name: Show Plan
+        run: terraform show tfplan 
 
       - name: Upload Plan
         uses: actions/upload-artifact@v4
@@ -161,6 +167,9 @@ jobs:
 
       - name: Plan
         run: terraform plan -out=tfplan
+        
+      - name: Show Plan
+        run: terraform show tfplan
 
       - name: Upload Plan
         uses: actions/upload-artifact@v4
