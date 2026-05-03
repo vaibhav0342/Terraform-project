@@ -19,11 +19,6 @@ variable "subnet_id" {
   type = string
 }
 
-variable "security_group_ids" {
-  description = "AWS security group"
-  type = list(string)
-}
-
 variable "environment" {
   type = string
 }
