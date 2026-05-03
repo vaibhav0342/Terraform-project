@@ -1,9 +1,7 @@
 terraform {
   backend "s3" {
-    bucket         = "tf-state-bucket-prod"
+    bucket         = "tf-state-bucket-staging-env"
     key            = "staging/ec2/terraform.tfstate"
     region         = "ap-south-1"
-    dynamodb_table = "tf-locks"
-    encrypt        = true
   }
 }
