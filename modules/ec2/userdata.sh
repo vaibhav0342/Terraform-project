@@ -1,48 +1,74 @@
 #!/bin/bash
 
-set -e
+set -euxo pipefail
 
-sudo yum update -y
+########################################
+# System Update
+########################################
+yum update -y
 
+########################################
 # Install Docker
-sudo amazon-linux-extras install docker -y
-sudo systemctl enable docker
-sudo systemctl start docker
-sudo usermod -aG docker ec2-user
+########################################
+yum install -y docker
 
-# Install Java
-sudo yum install java-17-amazon-corretto -y
+systemctl enable docker
+systemctl start docker
 
-# Add Jenkins Repo
-sudo wget -O /etc/yum.repos.d/jenkins.repo \
+usermod -aG docker ec2-user
+
+########################################
+# Install Java 17
+########################################
+yum install -y java-17-amazon-corretto
+
+########################################
+# Install Jenkins
+########################################
+wget -O /etc/yum.repos.d/jenkins.repo \
 https://pkg.jenkins.io/redhat-stable/jenkins.repo
 
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
-# Install Jenkins
-sudo yum install jenkins -y
+yum install -y jenkins
 
-# Enable Jenkins
-sudo systemctl enable jenkins
-sudo systemctl start jenkins
+systemctl enable jenkins
+systemctl start jenkins
 
+########################################
 # Install Git
-sudo yum install git -y
+########################################
+yum install -y git
 
+########################################
 # Install Terraform
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo \
+########################################
+yum install -y yum-utils
+
+yum-config-manager --add-repo \
 https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
 
-sudo yum -y install terraform
+yum install -y terraform
 
+########################################
 # Install kubectl
-curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.0/2024-01-04/bin/linux/amd64/kubectl
+########################################
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
 chmod +x kubectl
-sudo mv kubectl /usr/local/bin/
+mv kubectl /usr/local/bin/
 
+########################################
 # Install AWS CLI
-sudo yum install aws-cli -y
+########################################
+yum install -y aws-cli
 
-echo "Jenkins setup completed"
+########################################
+# Verify Services
+########################################
+systemctl status docker --no-pager
+systemctl status jenkins --no-pager
+
+echo "================================="
+echo " Jenkins installation completed "
+echo "================================="

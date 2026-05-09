@@ -26,7 +26,7 @@ module "ec2" {
   subnet_id             = var.subnet_id
 
   security_group_ids = [module.security.security_group_id]
-
+  
   instance_profile_name = module.ssm.instance_profile_name
 
   tags = {
