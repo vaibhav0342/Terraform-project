@@ -20,7 +20,7 @@ usermod -aG docker ec2-user
 ########################################
 # Install Java 17
 ########################################
-yum install -y java-17-amazon-corretto
+sudo dnf install -y java-21-amazon-corretto
 
 ########################################
 # Install Jenkins
