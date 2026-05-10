@@ -57,15 +57,11 @@ resource "aws_lb_target_group_attachment" "jenkins" {
   port = 8080
 }
 
-resource "aws_lb_listener" "https" {
-
+resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.jenkins_alb.arn
 
-  port     = 443
-  protocol = "HTTPS"
-
-  ssl_policy      = "ELBSecurityPolicy-2016-08"
- 
+  port     = 80
+  protocol = "HTTP"
 
   default_action {
     type             = "forward"
