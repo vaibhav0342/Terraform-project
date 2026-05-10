@@ -1,25 +1,58 @@
 module "vpc" {
-  source     = "../../modules/vpc"
+
+  source = "../../modules/vpc"
+
   project    = "terraform-project"
   aws_region = var.aws_region
 }
 
+#################################
+# SSM
+#################################
+
 module "ssm" {
-  source  = "../../modules/ssm"
+
+  source = "../../modules/ssm"
+
   project = "terraform-project"
 }
+
+#################################
+# Security Groups
+#################################
 
 module "security" {
-  source  = "../../modules/security"
+
+  source = "../../modules/security"
 
   project = "terraform-project"
-  vpc_id  = module.vpc.vpc_id
+
+  vpc_id = module.vpc.vpc_id
+
+  allowed_ssh_cidr = [
+    "0.0.0.0/0"
+  ]
+
+  allowed_jenkins_cidr = [
+    "0.0.0.0/0"
+  ]
+
+  tags = {
+    Environment = var.environment
+    Project     = "terraform-project"
+  }
 }
+
+#################################
+# Jenkins EC2
+#################################
+
 module "ec2" {
+
   source = "../../modules/ec2"
 
-  ami                   = var.ami
-  instance_type         = var.instance_type
+  ami           = var.ami
+  instance_type = var.instance_type
 
   subnet_id = module.vpc.private_subnet_ids[0]
 
@@ -31,8 +64,13 @@ module "ec2" {
 
   tags = {
     Environment = var.environment
+    Project     = "terraform-project"
   }
 }
+
+#################################
+# Internal ALB
+#################################
 
 module "alb" {
 
@@ -47,7 +85,13 @@ module "alb" {
   private_subnet_ids = module.vpc.private_subnet_ids
 
   alb_security_group_id = module.security.alb_security_group_id
+
+  certificate_arn = var.certificate_arn
 }
+
+#################################
+# CloudFront
+#################################
 
 module "cloudfront" {
 
