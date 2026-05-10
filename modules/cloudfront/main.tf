@@ -1,29 +1,53 @@
+resource "aws_cloudfront_vpc_origin" "jenkins" {
+
+  vpc_origin_endpoint_config {
+
+    name = "jenkins-vpc-origin"
+
+    arn = var.alb_arn
+
+    http_port  = 80
+    https_port = 443
+
+    origin_protocol_policy = "https-only"
+  }
+}
 resource "aws_cloudfront_distribution" "jenkins_cf" {
 
   enabled = true
 
   origin {
+
     domain_name = var.alb_dns_name
     origin_id   = "jenkins-alb"
 
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
+    vpc_origin_config {
+      vpc_origin_id = aws_cloudfront_vpc_origin.jenkins.id
     }
   }
 
   default_cache_behavior {
-    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
 
-    cached_methods = ["GET", "HEAD"]
-
-    target_origin_id = "jenkins-alb"
-
+    target_origin_id       = "jenkins-alb"
     viewer_protocol_policy = "redirect-to-https"
 
+    allowed_methods = [
+      "GET",
+      "HEAD",
+      "OPTIONS",
+      "PUT",
+      "POST",
+      "PATCH",
+      "DELETE"
+    ]
+
+    cached_methods = [
+      "GET",
+      "HEAD"
+    ]
+
     forwarded_values {
+
       query_string = true
 
       cookies {
@@ -33,6 +57,7 @@ resource "aws_cloudfront_distribution" "jenkins_cf" {
   }
 
   restrictions {
+
     geo_restriction {
       restriction_type = "none"
     }

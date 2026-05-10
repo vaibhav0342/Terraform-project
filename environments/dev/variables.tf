@@ -14,15 +14,6 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "vpc_id" {
-  description = "vpc"
-  type = string
-}
-variable "subnet_id" {
-  description = "vpc subnet id"
-  type = string
-}
-
 variable "environment" {
   type = string
 }
