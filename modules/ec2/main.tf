@@ -7,7 +7,7 @@ resource "aws_instance" "web" {
 
   iam_instance_profile   = var.instance_profile_name
 
-  associate_public_ip_address = false
+  associate_public_ip_address = true
   monitoring                  = true
 
   #################################
