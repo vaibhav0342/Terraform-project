@@ -11,15 +11,17 @@ resource "aws_cloudfront_vpc_origin" "jenkins" {
 
     origin_protocol_policy = "http-only"
 
-    origin_ssl_protocols = [
-      "TLSv1.2"
-    ]
+    origin_ssl_protocols {
+      items    = ["TLSv1.2"]
+      quantity = 1
+    }
   }
 
   tags = {
     Name = "jenkins-vpc-origin"
   }
 }
+
 resource "aws_cloudfront_distribution" "jenkins_cf" {
 
   enabled = true

@@ -3,13 +3,10 @@ param(
 )
 
 Write-Host "================================="
-Write-Host " Deploying Environment: $Environment"
+Write-Host " Validating Terraform"
 Write-Host "================================="
 
 Set-Location "$PSScriptRoot/../environments/$Environment"
 
-terraform init
 terraform fmt -recursive
 terraform validate
-terraform plan -out=tfplan
-terraform apply -auto-approve tfplan

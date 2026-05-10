@@ -1,6 +1,4 @@
 ami           = "ami-0ed094fb1304fd857"
 instance_type = "t3.micro"
 aws_region    = "us-east-1"
-vpc_id        = "vpc-06c3663bbb6db07cb"
-subnet_id     = "subnet-0ad6bb2e4c5e8f284"
 environment = "prod"
