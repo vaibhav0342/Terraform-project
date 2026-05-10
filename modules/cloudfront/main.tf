@@ -10,9 +10,16 @@ resource "aws_cloudfront_vpc_origin" "jenkins" {
     https_port = 443
 
     origin_protocol_policy = "http-only"
+
+    origin_ssl_protocols = [
+      "TLSv1.2"
+    ]
+  }
+
+  tags = {
+    Name = "jenkins-vpc-origin"
   }
 }
-
 resource "aws_cloudfront_distribution" "jenkins_cf" {
 
   enabled = true
