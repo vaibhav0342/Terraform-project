@@ -9,9 +9,11 @@ resource "aws_cloudfront_vpc_origin" "jenkins" {
     http_port  = 80
     https_port = 443
 
-    origin_protocol_policy = "https-only"
+    origin_protocol_policy = "http-only"
+
   }
 }
+
 resource "aws_cloudfront_distribution" "jenkins_cf" {
 
   enabled = true
@@ -19,16 +21,16 @@ resource "aws_cloudfront_distribution" "jenkins_cf" {
   origin {
 
     domain_name = var.alb_dns_name
-    origin_id   = "jenkins-alb"
 
-    vpc_origin_config {
-      vpc_origin_id = aws_cloudfront_vpc_origin.jenkins.id
-    }
+    origin_id = "jenkins-alb"
+
+    vpc_origin_id = aws_cloudfront_vpc_origin.jenkins,id
   }
 
   default_cache_behavior {
 
-    target_origin_id       = "jenkins-alb"
+    target_origin_id = "jenkins-alb"
+
     viewer_protocol_policy = "redirect-to-https"
 
     allowed_methods = [
