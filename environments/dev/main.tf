@@ -34,3 +34,27 @@ module "ec2" {
     Project     = "terraform-project"
   }
 }
+
+
+module "alb" {
+  source = "../../modules/alb"
+
+  project = "terraform-project"
+
+  vpc_id = var.vpc_id
+
+  instance_id = module.ec2.instance_id
+
+  public_subnet_ids = [
+    "subnet-0ad6bb2e4c5e8f284",
+    "subnet-0dc5f1c0e5e28a709"
+  ]
+
+  alb_security_group_id = module.security.alb_security_group_id
+}
+
+module "cloudfront" {
+  source = "../../modules/cloudfront"
+
+  alb_dns_name = module.alb.alb_dns_name
+}

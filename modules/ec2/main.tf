@@ -7,7 +7,7 @@ resource "aws_instance" "web" {
 
   iam_instance_profile   = var.instance_profile_name
 
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   monitoring                  = true
 
   #################################
@@ -41,7 +41,7 @@ resource "aws_instance" "web" {
   #################################
   tags = merge(
     {
-      Name = "jenkins-server"
+      Name = "jenkins-private"
     },
     var.tags
   )

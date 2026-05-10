@@ -7,12 +7,12 @@ resource "aws_security_group" "jenkins_sg" {
   # Jenkins
   #################################
   ingress {
-    description = "Jenkins UI"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_jenkins_cidr
-  }
+  description     = "Jenkins from ALB"
+  from_port       = 8080
+  to_port         = 8080
+  protocol        = "tcp"
+  security_groups = [aws_security_group.alb_sg.id]
+}
 
   #################################
   # HTTP
